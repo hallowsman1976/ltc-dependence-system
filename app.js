@@ -404,9 +404,24 @@ function openAssignModal(patientId, patientName) {
 async function saveAssignment() {
     const pId = document.getElementById('assign-patient-id').value;
     const cgCode = document.getElementById('assign-cg-code').value;
-    if (!cgCode) return showAlert('warning', 'แจ้งเตือน', 'กรุณาเลือกผู้ดูแล');
+    
+    // ดักจับกรณีไม่ได้เลือกผู้ดูแล
+    if (!cgCode) {
+        return showAlert('warning', 'แจ้งเตือน', 'กรุณาเลือกผู้ดูแล');
+    }
+
+    // ส่งข้อมูลไปหา Backend
     const res = await apiRequest('assignPatient', { patientId: pId, caregiverCode: cgCode });
-    if (res.success) { showAlert('success', 'สำเร็จ', 'มอบหมายงานเรียบร้อย'); closeModal('modal-assign'); renderPatientPage(true); }
+    
+    // ตรวจสอบผลลัพธ์
+    if (res.success) { 
+        showAlert('success', 'สำเร็จ', 'มอบหมายงานเรียบร้อย'); 
+        closeModal('modal-assign'); 
+        renderPatientPage(true); 
+    } else {
+        // เพิ่มส่วนนี้เพื่อแสดง Error ให้เราทราบสาเหตุที่แท้จริง
+        showAlert('error', 'ข้อผิดพลาดในการมอบหมาย', res.message);
+    }
 }
 
 // ----------------------------------------------------------------------------
