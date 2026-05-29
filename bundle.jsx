@@ -32,7 +32,29 @@
    ║   thaiDateString, thaiTimeString                                      ║
    ╚═══════════════════════════════════════════════════════════════════════╝ */
 
-// Current login (Care Giver)
+// ─── API endpoint ─────────────────────────────────────────────────────────
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwegFGFsmoOYVjXIcAim-Z6A6SL7NH3N0dO4jmsQVQzIY8a4J-FdQGncRCMhD9MUSplNg/exec';
+//                                              ^^^^^^^^^^^^^
+//                                              ใส่ URL จาก Step 4.4
+
+async function rpc(fn, args) {
+  const token = localStorage.getItem('ltc_token') || '';
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ⚠️ ห้ามใช้ application/json
+      body: JSON.stringify({ fn, args: args || [], token }),
+      redirect: 'follow'
+    });
+    return await res.json();
+  } catch (err) {
+    return { ok: false, message: 'เชื่อมต่อ server ไม่สำเร็จ: ' + err.message };
+  }
+}
+
+// expose
+window.rpc = rpc;
+window.GAS_URL = GAS_URL;
 const CURRENT_USER = {
   user_id: "CG-007",
   name: "ขนิษฐา  ภูเวียงคำ",
@@ -744,17 +766,24 @@ function LoginScreen({ onLogin }) {
   const [show, setShow] = uS1(false);
   const [loading, setLoading] = uS1(false);
 
-  const submit = () => {
-    if (!username || !password) {
-      Swal.fire({ icon: "warning", title: "กรอกข้อมูลไม่ครบ", text: "กรุณาระบุชื่อผู้ใช้และรหัสผ่าน" });
-      return;
-    }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onLogin(role);
-    }, 700);
-  };
+ const submit = async () => {
+  if (!username || !password) {
+    Swal.fire({ icon: "warning", title: "กรอกข้อมูลไม่ครบ", text: "กรุณาระบุชื่อผู้ใช้และรหัสผ่าน" });
+    return;
+  }
+  setLoading(true);
+  const r = await rpc('login', [username, password, navigator.userAgent]);
+  setLoading(false);
+  if (r.ok) {
+    localStorage.setItem('ltc_token', r.token);
+    localStorage.setItem('ltc_user', JSON.stringify(r.user));
+    // map role -> route
+    const roleMap = { admin: 'admin', case_manager: 'case_manager', caregiver: 'caregiver' };
+    onLogin(roleMap[r.user.Role] || 'caregiver');
+  } else {
+    Swal.fire({ icon: "error", title: "เข้าสู่ระบบไม่สำเร็จ", text: r.message });
+  }
+};
 
   return (
     <div className="phone phone-bg">
