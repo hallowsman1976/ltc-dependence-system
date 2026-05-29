@@ -28,8 +28,12 @@ let hasAlerted8Q = false;
 // ----------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
     checkSession();
+    
+    // เรียกใช้งาน Flatpickr กับ Input ทั้ง 3 จุด
+    initThaiFlatpickr("#report-date");
+    initThaiFlatpickr("#pt-birthDate");
+    initThaiFlatpickr("#vf-date");
 });
-
 // ----------------------------------------------------------------------------
 // 3. CORE UTILITIES
 // ----------------------------------------------------------------------------
@@ -733,38 +737,32 @@ async function saveVisitReport() {
     } else showAlert('error', 'ข้อผิดพลาด', res.message);
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-    
-    // ฟังก์ชันเสริมสำหรับเปลี่ยนตัวเลขปีในส่วนหัวปฏิทิน (Header) ให้เป็น พ.ศ.
-    function updateYearToThai(selectedDates, dateStr, instance) {
-        const yearInput = instance.currentYearElement;
-        if (yearInput) {
-            const currentYear = instance.currentYear;
-            yearInput.value = currentYear + 543;
-        }
-    }
-
-    // เริ่มต้นเรียกใช้งาน Flatpickr
-    flatpickr("#vf-date", {
-        locale: "th",             // ตั้งค่าเป็นภาษาไทย (เปลี่ยนชื่อเดือนและวัน)
-        altInput: true,           // เปิดใช้งาน altInput เพื่อสร้างช่อง input ตัวแทนสำหรับแสดงผล
-        altFormat: "d/m/Y",       // รูปแบบที่จะแสดงผลให้ผู้ใช้เห็น (เราจะแปลงปีใน formatDate)
-        dateFormat: "Y-m-d",      // รูปแบบข้อมูลจริงที่จะถูกเก็บใน attribute value ไว้ส่งให้ Backend
-        defaultDate: new Date(),  // ตั้งค่าเริ่มต้นเป็นวันนี้ (หากต้องการ)
-        
-        // ดักจับและเขียนทับการตั้งค่ารูปแบบวันที่ก่อนแสดงบนหน้าจอ (แปลง ค.ศ. เป็น พ.ศ.)
-        formatDate: function (date, format, locale) {
-            const d = date.getDate().toString().padStart(2, '0');
-            const m = (date.getMonth() + 1).toString().padStart(2, '0');
-            const y = (date.getFullYear() + 543).toString();
-            return `${d}/${m}/${y}`; // จะได้ผลลัพธ์เช่น 29/05/2569
+// ==========================================
+// FLATPICKR (รองรับปี พ.ศ.)
+// ==========================================
+function initThaiFlatpickr(selector) {
+    flatpickr(selector, {
+        locale: "th",
+        dateFormat: "Y-m-d", // ส่งข้อมูลแบบ ค.ศ.
+        altInput: true,
+        altInputClass: "w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none bg-white",
+        altFormat: "d/m/Y", // แสดงผล
+        formatDate: (date, formatStr, locale) => {
+            const year = date.getFullYear() + 543; // แปลงเป็น พ.ศ.
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${day}/${month}/${year}`;
         },
-        
-        // Hooks: เรียกใช้งานฟังก์ชันอัปเดตปี พ.ศ. ตามเหตุการณ์ต่างๆ ของปฏิทิน
-        onReady: updateYearToThai,
-        onYearChange: updateYearToThai,
-        onMonthChange: updateYearToThai,
-        onOpen: updateYearToThai
+        onReady: function(selectedDates, dateStr, instance) { convertCalendarYearToBE(instance); },
+        onYearChange: function(selectedDates, dateStr, instance) { convertCalendarYearToBE(instance); },
+        onMonthChange: function(selectedDates, dateStr, instance) { convertCalendarYearToBE(instance); }
     });
-    
-});
+}
+
+function convertCalendarYearToBE(instance) {
+    const yearElement = instance.currentYearElement;
+    if (yearElement) {
+        const currentYear = parseInt(yearElement.value);
+        if (currentYear < 2500) { yearElement.value = currentYear + 543; }
+    }
+}
