@@ -732,3 +732,39 @@ async function saveVisitReport() {
         showPage('my-patients'); 
     } else showAlert('error', 'ข้อผิดพลาด', res.message);
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // ฟังก์ชันเสริมสำหรับเปลี่ยนตัวเลขปีในส่วนหัวปฏิทิน (Header) ให้เป็น พ.ศ.
+    function updateYearToThai(selectedDates, dateStr, instance) {
+        const yearInput = instance.currentYearElement;
+        if (yearInput) {
+            const currentYear = instance.currentYear;
+            yearInput.value = currentYear + 543;
+        }
+    }
+
+    // เริ่มต้นเรียกใช้งาน Flatpickr
+    flatpickr("#vf-date", {
+        locale: "th",             // ตั้งค่าเป็นภาษาไทย (เปลี่ยนชื่อเดือนและวัน)
+        altInput: true,           // เปิดใช้งาน altInput เพื่อสร้างช่อง input ตัวแทนสำหรับแสดงผล
+        altFormat: "d/m/Y",       // รูปแบบที่จะแสดงผลให้ผู้ใช้เห็น (เราจะแปลงปีใน formatDate)
+        dateFormat: "Y-m-d",      // รูปแบบข้อมูลจริงที่จะถูกเก็บใน attribute value ไว้ส่งให้ Backend
+        defaultDate: new Date(),  // ตั้งค่าเริ่มต้นเป็นวันนี้ (หากต้องการ)
+        
+        // ดักจับและเขียนทับการตั้งค่ารูปแบบวันที่ก่อนแสดงบนหน้าจอ (แปลง ค.ศ. เป็น พ.ศ.)
+        formatDate: function (date, format, locale) {
+            const d = date.getDate().toString().padStart(2, '0');
+            const m = (date.getMonth() + 1).toString().padStart(2, '0');
+            const y = (date.getFullYear() + 543).toString();
+            return `${d}/${m}/${y}`; // จะได้ผลลัพธ์เช่น 29/05/2569
+        },
+        
+        // Hooks: เรียกใช้งานฟังก์ชันอัปเดตปี พ.ศ. ตามเหตุการณ์ต่างๆ ของปฏิทิน
+        onReady: updateYearToThai,
+        onYearChange: updateYearToThai,
+        onMonthChange: updateYearToThai,
+        onOpen: updateYearToThai
+    });
+    
+});
