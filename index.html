@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>ระบบรายงานการดูแลผู้สูงอายุที่มีภาวะพึ่งพิง — รพ.สต.บ้านทรายไหลแล้ง</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- Tailwind via Play CDN (prototype-only) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Mitr', 'system-ui', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace']
+        },
+        colors: {
+          ink: {
+            900: '#0b1530',
+            800: '#13224a',
+            700: '#1e3563',
+            600: '#2c4881',
+            500: '#506aa3',
+            400: '#8094be',
+            300: '#b3c0d6',
+            200: '#d9e0eb',
+            100: '#ecf0f7',
+            50:  '#f6f8fc'
+          },
+          paper: {
+            DEFAULT: '#f7f3ea',
+            warm:    '#fbf7ee',
+            cool:    '#f1f4fa'
+          },
+          accent: {
+            sage:  '#3e8e6a',
+            sage2: '#67ad88',
+            gold:  '#b58a3c',
+            coral: '#c0533f',
+            sky:   '#3a7fb8'
+          }
+        },
+        boxShadow: {
+          card: '0 1px 2px rgba(13,21,48,.04), 0 8px 24px -12px rgba(13,21,48,.12)',
+          pop:  '0 10px 30px -10px rgba(13,21,48,.35)',
+          ring: '0 0 0 4px rgba(30,53,99,.08)'
+        }
+      }
+    }
+  }
+</script>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  :root {
+    color-scheme: light;
+  }
+  html, body { background: #efe9da; }
+  body {
+    font-family: 'Mitr', system-ui, sans-serif;
+    font-weight: 300;
+    color: #0b1530;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* phone shell + page background */
+  .phone-bg {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #e8e0cc 0%, transparent 60%),
+      radial-gradient(800px 600px at 100% 100%, #dfe6f0 0%, transparent 60%),
+      #efe9da;
+  }
+  .phone {
+    width: min(440px, 100vw);
+    min-height: 100dvh;
+    margin: 0 auto;
+    background: #fbf7ee;
+    box-shadow: 0 30px 80px -20px rgba(13,21,48,.25);
+    position: relative;
+    overflow-x: hidden;
+  }
+  @media (min-width: 768px) {
+    .phone {
+      margin-top: 24px;
+      margin-bottom: 24px;
+      border-radius: 32px;
+      min-height: calc(100dvh - 48px);
+      overflow: hidden;
+    }
+    .phone-bg { padding: 0 16px; }
+  }
+
+  /* Width-only constraint for fixed bottom bars — matches .phone width
+     without inheriting min-height/background/shadow that would cover content */
+  .phone-w {
+    width: min(440px, 100vw);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Thai number-friendly tabular figures */
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* status bar look */
+  .sbar {
+    background: linear-gradient(180deg, rgba(11,21,48,.04), transparent);
+  }
+
+  /* leaflet container */
+  .leaflet-container { font-family: 'Mitr', sans-serif; }
+
+  /* small dotted divider */
+  .dotted-rule {
+    background-image: radial-gradient(circle, #b3c0d6 1px, transparent 1.4px);
+    background-size: 6px 2px;
+    background-repeat: repeat-x;
+    background-position: 0 50%;
+    height: 2px;
+  }
+
+  /* hide scrollbar on horizontal scrollers */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  /* placeholder pattern for image upload tiles */
+  .ph-stripes {
+    background-image: repeating-linear-gradient(
+      45deg, #e6decb, #e6decb 6px, #efe9da 6px, #efe9da 12px
+    );
+  }
+
+  /* SweetAlert2 — use Mitr */
+  .swal2-popup { font-family: 'Mitr', sans-serif !important; }
+  .swal2-title, .swal2-html-container { font-weight: 300 !important; }
+  .swal2-styled.swal2-confirm {
+    background-color: #13224a !important;
+    font-family: 'Mitr', sans-serif !important;
+    font-weight: 400 !important;
+    border-radius: 12px !important;
+  }
+  .swal2-styled.swal2-cancel {
+    background-color: #ecf0f7 !important;
+    color: #13224a !important;
+    font-family: 'Mitr', sans-serif !important;
+    font-weight: 400 !important;
+    border-radius: 12px !important;
+  }
+
+  /* native-feel taps */
+  button, [role="button"], label[for] { -webkit-tap-highlight-color: transparent; }
+
+  /* number input — hide spinners */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  /* checked radio card glow */
+  .radio-card-on {
+    border-color: #13224a !important;
+    box-shadow: 0 0 0 3px rgba(19,34,74,.10), 0 1px 2px rgba(13,21,48,.06) !important;
+    background: #fbf9f3 !important;
+  }
+
+  /* progress stripe shimmer for loading */
+  @keyframes stripe { from { background-position: 0 0; } to { background-position: 32px 0; } }
+  .saving {
+    background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 8px, transparent 8px 16px);
+    animation: stripe .8s linear infinite;
+  }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Bundled: data + shared + screens + dashboard + admin-mgmt
+       + case-manager + form-sections + form + app
+       (originals preserved in design-extract/ltc-dependence-system/project/) -->
+  <script type="text/babel" data-presets="env,react" src="bundle.jsx"></script>
+</body>
+</html>

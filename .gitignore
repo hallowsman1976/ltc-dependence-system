@@ -1,0 +1,27 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
+
+# Node / build artifacts (ถ้าจะใช้ build tool ในอนาคต)
+node_modules/
+dist/
+build/
+*.log
+
+# Apps Script local clasp config — มี OAuth token
+.clasprc.json
+database/.clasp.json
+
+# Local dev secrets — copy .env.example เป็น .env แล้วใส่ค่าจริง
+.env
+.env.local
+
+# Optional: ลบ design-extract ออกจาก deploy ถ้าไม่ต้องการ
+# (~4.6 MB ของ archive ต้นทาง — uncomment ถ้าไม่อยาก push)
+# design-extract/
