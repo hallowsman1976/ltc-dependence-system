@@ -254,9 +254,14 @@ async function renderCareGiverPage(forceFetch = false) {
     document.getElementById('caregiver-list-container').innerHTML = renderResponsiveList(
         filteredData,
         ['รหัส', 'ชื่อ-สกุล', 'เบอร์โทร', 'สถานะ', 'จัดการ'],
-        (cg) => `<div class="text-sm font-medium text-gray-900">${cg.caregiverCode}</div><div class="text-sm text-gray-900">${cg.fullName}</div><div class="text-sm text-gray-500">${cg.phone}</div><div><span class="px-2 py-1 text-xs rounded-full ${cg.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${cg.status}</span></div>`,
+        (cg) => [
+            `<div class="text-sm font-medium text-gray-900">${cg.caregiverCode}</div>`,
+            `<div class="text-sm text-gray-900">${cg.fullName}</div>`,
+            `<div class="text-sm text-gray-500">${cg.phone}</div>`,
+            `<div><span class="px-2 py-1 text-xs font-medium rounded-full ${cg.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${cg.status}</span></div>`
+        ],
         (cg) => `<div class="font-bold text-lg text-primary mb-1">${cg.fullName}</div><div class="text-sm text-gray-600 mb-2">รหัส: ${cg.caregiverCode} | โทร: ${cg.phone}</div>`,
-        (cg) => `<button onclick="openCareGiverModal('${cg.caregiverCode}')" class="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded-lg"><i class="fa-solid fa-pen"></i></button> <button onclick="deleteCareGiver('${cg.caregiverCode}')" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg"><i class="fa-solid fa-trash"></i></button>`
+        (cg) => `<button onclick="openCareGiverModal('${cg.caregiverCode}')" class="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded-lg transition"><i class="fa-solid fa-pen"></i></button> <button onclick="deleteCareGiver('${cg.caregiverCode}')" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg transition"><i class="fa-solid fa-trash"></i></button>`
     );
 }
 
@@ -489,8 +494,27 @@ async function renderPatientHistory(patientId, patientName) {
 
 function renderResponsiveList(data, tableHeaders, tableRowFn, cardBodyFn, actionFn) {
     if (!data || data.length === 0) return `<div class="text-center p-10 bg-white rounded-2xl border border-dashed border-gray-300 text-gray-500">ไม่พบข้อมูล</div>`;
+    
+    // โหมดมือถือ (Card)
     let mobileHtml = '<div class="md:hidden space-y-4">' + data.map(item => `<div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 relative">${cardBodyFn(item)}<div class="mt-4 pt-4 border-t border-gray-50 flex justify-end">${actionFn(item)}</div></div>`).join('') + '</div>';
-    let desktopHtml = `<div class="hidden md:block overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-100"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 text-gray-600 text-sm border-b border-gray-100"><tr>${tableHeaders.map(th => `<th class="px-6 py-4 font-medium">${th}</th>`).join('')}</tr></thead><tbody class="divide-y divide-gray-100">${data.map(item => `<tr class="hover:bg-blue-50/50">${tableRowFn(item).split('</div>\n').filter(c => c.trim()).map(c => `<td class="px-6 py-4">${c}</div></td>`).join('')}<td class="px-6 py-4"><div class="flex justify-end gap-2">${actionFn(item)}</div></td></tr>`).join('')}</tbody></table></div>`;
+    
+    // โหมด Desktop (Table)
+    let desktopHtml = `<div class="hidden md:block overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-100">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 text-gray-600 text-sm border-b border-gray-100">
+                <tr>${tableHeaders.map(th => `<th class="px-6 py-4 font-medium">${th}</th>`).join('')}</tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                ${data.map(item => {
+                    const columns = tableRowFn(item); // รับค่าเป็น Array ของแต่ละคอลัมน์
+                    const columnsHtml = columns.map(col => `<td class="px-6 py-4">${col}</td>`).join('');
+                    const actionHtml = `<td class="px-6 py-4"><div class="flex justify-end gap-2">${actionFn(item)}</div></td>`;
+                    return `<tr class="hover:bg-blue-50/50 transition-colors">${columnsHtml}${actionHtml}</tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    
     return mobileHtml + desktopHtml;
 }
 
