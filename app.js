@@ -363,14 +363,18 @@ async function renderPatientPage(forceFetch = false) {
                 `<div class="text-sm text-gray-500">${pt.caregiverName !== '-' ? pt.caregiverName : '<span class="text-red-500 font-medium">ยังไม่ระบุ</span>'}</div>`
             ];
         },
+        // วางทับในส่วน (pt) => [ ... ] ของฟังก์ชัน renderPatientPage
         (pt) => {
-            // ดักจับและคำนวณอายุสำหรับมุมมองมือถือ (Card)
             const safeAge = (pt.age !== undefined && pt.age !== null && !isNaN(pt.age)) ? pt.age : calculatePatientAge(pt.birthDate);
-            return `<div class="flex items-center gap-4 mb-3"><img src="${pt.imageUrl}" class="w-14 h-14 rounded-full object-cover shadow"><div><div class="font-bold text-lg text-primary">${pt.fullName}</div><div class="text-sm text-gray-600">HN: ${pt.patientId} | อายุ ${safeAge} ปี</div></div></div><div class="text-sm text-gray-500 mb-2 bg-gray-50 p-2 rounded"><i class="fa-user-nurse fa-solid mr-1"></i> ผู้ดูแล: ${pt.caregiverName}</div>`;
-        },
-        (pt) => `<div class="flex flex-wrap gap-2"><button onclick="renderPatientHistory('${pt.patientId}', '${pt.fullName}')" title="ดูประวัติ" class="text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-100 transition"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติ</button> <button onclick="openAssignModal('${pt.patientId}', '${pt.fullName}')" title="มอบหมายผู้ดูแล" class="text-orange-500 bg-orange-50 px-3 py-1.5 rounded-lg text-sm hover:bg-orange-100 transition"><i class="fa-solid fa-hand-holding-medical"></i> มอบหมาย</button> <button onclick="openPatientModal('${pt.patientId}')" class="text-blue-500 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition"><i class="fa-solid fa-pen"></i></button> <button onclick="deletePatient('${pt.patientId}')" class="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition"><i class="fa-solid fa-trash"></i></button></div>`
-    );
-}
+            return [
+                `<div class="text-sm font-medium text-gray-900">${pt.patientId}</div>`,
+                `<div class="flex items-center gap-3">
+                    <img src="${pt.imageUrl}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/168/168726.png'" class="w-10 h-10 rounded-full object-cover shadow-sm bg-white">
+                    <div><div class="text-sm font-medium text-gray-900">${pt.fullName}</div><div class="text-xs text-gray-500">อายุ ${safeAge} ปี</div></div>
+                </div>`,
+                `<div class="text-sm text-gray-500">${pt.caregiverName !== '-' ? pt.caregiverName : '<span class="text-red-500 font-medium">ยังไม่ระบุ</span>'}</div>`
+            ];
+        }
 
 function openPatientModal(id = null) {
     document.getElementById('form-patient').reset();
