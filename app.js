@@ -1,15 +1,15 @@
-
 /**
  * ============================================================================
  * ระบบดูแลผู้มีภาวะพึ่งพิงในชุมชน (Community Long-Term Care System)
- * Frontend Logic สมบูรณ์แบบ (Final Version)
+ * Frontend Logic สมบูรณ์แบบ (Final Version + Flatpickr BE)
  * ============================================================================
  */
 
 // ----------------------------------------------------------------------------
 // 1. CONFIGURATION & STATE
 // ----------------------------------------------------------------------------
-const API_URL = "https://script.google.com/macros/s/AKfycbwegFGFsmoOYVjXIcAim-Z6A6SL7NH3N0dO4jmsQVQzIY8a4J-FdQGncRCMhD9MUSplNg/exec"; // **อย่าลืมเปลี่ยนตรงนี้**
+// ** สำคัญมาก: ใส่ Web App URL ของคุณที่นี่ (ต้องลงท้ายด้วย /exec) **
+const API_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; 
 
 let currentUser = null;
 let globalCareGivers = [];
@@ -29,11 +29,12 @@ let hasAlerted8Q = false;
 document.addEventListener("DOMContentLoaded", () => {
     checkSession();
     
-    // เรียกใช้งาน Flatpickr กับ Input ทั้ง 3 จุด
+    // เริ่มต้นการทำงานของ Flatpickr (ปฏิทินปี พ.ศ.)
     initThaiFlatpickr("#report-date");
     initThaiFlatpickr("#pt-birthDate");
     initThaiFlatpickr("#vf-date");
 });
+
 // ----------------------------------------------------------------------------
 // 3. CORE UTILITIES
 // ----------------------------------------------------------------------------
@@ -79,7 +80,7 @@ async function apiRequest(action, data = {}) {
     } catch (error) {
         hideLoading();
         console.error("API Error:", error);
-        showAlert('error', 'ข้อผิดพลาดการเชื่อมต่อ', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+        showAlert('error', 'ข้อผิดพลาดการเชื่อมต่อ', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ ตรวจสอบ URL หรืออินเทอร์เน็ต');
         return { success: false, message: error.message };
     }
 }
@@ -182,14 +183,11 @@ function renderLayoutByRole() {
 }
 
 function showPage(pageId) {
-    // ซ่อนทุกหน้า
     document.querySelectorAll('.page-section').forEach(p => p.classList.add('hidden'));
     
-    // แสดงหน้าที่ต้องการ
     const targetPage = document.getElementById(`page-${pageId}`);
     if (targetPage) targetPage.classList.remove('hidden');
 
-    // จัดการ Active State เมนู
     document.querySelectorAll('.menu-btn').forEach(btn => {
         btn.classList.remove('bg-primary/10', 'text-primary');
         btn.classList.add('text-gray-600');
@@ -204,7 +202,7 @@ function showPage(pageId) {
     if (activeDesktop) activeDesktop.classList.add('bg-primary/10', 'text-primary');
     if (activeMobile) activeMobile.classList.add('text-primary');
 
-    // Trigger Logic ตามหน้า
+    // เรียกฟังก์ชันตามหน้า
     if (pageId === 'dashboard') renderAdminDashboard();
     if (pageId === 'caregivers') renderCareGiverPage(true);
     if (pageId === 'patients') renderPatientPage(true);
@@ -343,6 +341,7 @@ async function renderPatientPage(forceFetch = false) {
 function openPatientModal(id = null) {
     document.getElementById('form-patient').reset();
     document.getElementById('pt-id').value = '';
+    
     if (id) {
         document.getElementById('modal-patient-title').innerText = "แก้ไขข้อมูลผู้ป่วย";
         const pt = globalPatients.find(p => p.patientId === id);
@@ -350,18 +349,32 @@ function openPatientModal(id = null) {
             document.getElementById('pt-id').value = pt.patientId;
             document.getElementById('pt-fullName').value = pt.fullName;
             document.getElementById('pt-pid').value = pt.pid;
-            document.getElementById('pt-birthDate').value = pt.birthDate.split('T')[0]; 
             document.getElementById('pt-gender').value = pt.gender;
             document.getElementById('pt-houseNo').value = pt.houseNo;
             document.getElementById('pt-moo').value = pt.moo;
+            
+            // อัปเดต Flatpickr สำหรับวันเกิด
+            if (pt.birthDate) {
+                document.getElementById('pt-birthDate')._flatpickr.setDate(pt.birthDate.split('T')[0]);
+            }
         }
-    } else document.getElementById('modal-patient-title').innerText = "เพิ่มผู้ป่วยใหม่";
+    } else {
+        document.getElementById('modal-patient-title').innerText = "เพิ่มผู้ป่วยใหม่";
+        document.getElementById('pt-birthDate')._flatpickr.clear();
+    }
     document.getElementById('modal-patient').classList.remove('hidden');
 }
 
 async function savePatient() {
     const id = document.getElementById('pt-id').value;
-    const payload = { fullName: document.getElementById('pt-fullName').value, pid: document.getElementById('pt-pid').value, birthDate: document.getElementById('pt-birthDate').value, gender: document.getElementById('pt-gender').value, houseNo: document.getElementById('pt-houseNo').value, moo: document.getElementById('pt-moo').value };
+    const payload = { 
+        fullName: document.getElementById('pt-fullName').value, 
+        pid: document.getElementById('pt-pid').value, 
+        birthDate: document.getElementById('pt-birthDate').value, // Flatpickr จะส่ง YYYY-MM-DD
+        gender: document.getElementById('pt-gender').value, 
+        houseNo: document.getElementById('pt-houseNo').value, 
+        moo: document.getElementById('pt-moo').value 
+    };
     let action = id ? 'updatePatient' : 'createPatient';
     if (id) payload.patientId = id;
 
@@ -494,11 +507,13 @@ async function openVisitForm(patientId, patientName) {
     document.getElementById('vf-patient-id').value = patientId;
     document.getElementById('vf-patient-name').innerText = `(${patientName})`;
     document.getElementById('vf-cg-name').value = currentUser.fullName;
-    document.getElementById('vf-date').value = new Date().toISOString().split('T')[0];
+    
+    // ตั้งค่าเวลาเริ่มต้นและ Flatpickr Date
+    document.getElementById('vf-date')._flatpickr.setDate(new Date().toISOString().split('T')[0]);
     document.getElementById('vf-start-time').value = new Date().toTimeString().substring(0, 5);
     
     ['vital-box', 'mental-box', 'older-img-box', 'loc-box'].forEach(id => document.getElementById(id).classList.add('hidden'));
-    showPage('page-visit-form'); // Manual override ID for visit form
+    showPage('page-visit-form');
 
     const res = await apiRequest('getVisitReportByPatient', { patientId: patientId });
     const nextNo = (res.success && res.data.length > 0) ? parseInt(res.data[0].visitNo) + 1 : 1;
@@ -615,7 +630,7 @@ function validateMentalHealthForm() {
 }
 
 function collectMentalHealthData() {
-    if (!document.getElementById('vf-mental-enable').checked) return { mentalEnabled: false, depression2QResult: '-', depression9QTotal: 0, depression9QResult: '-', suicide8QTotal: 0, suicide8QResult: '-' }; // (ย่อส่วนที่ไม่จำเป็นส่ง)
+    if (!document.getElementById('vf-mental-enable').checked) return { mentalEnabled: false, depression2QResult: '-', depression9QTotal: 0, depression9QResult: '-', suicide8QTotal: 0, suicide8QResult: '-' };
     const getVal = (name) => parseInt(document.querySelector(`input[name="${name}"]:checked`)?.value || 0);
     return {
         mentalEnabled: true,
@@ -737,13 +752,13 @@ async function saveVisitReport() {
     } else showAlert('error', 'ข้อผิดพลาด', res.message);
 }
 
-// ==========================================
-// FLATPICKR (รองรับปี พ.ศ.)
-// ==========================================
+// ----------------------------------------------------------------------------
+// 12. FLATPICKR (รองรับปี พ.ศ.)
+// ----------------------------------------------------------------------------
 function initThaiFlatpickr(selector) {
     flatpickr(selector, {
         locale: "th",
-        dateFormat: "Y-m-d", // ส่งข้อมูลแบบ ค.ศ.
+        dateFormat: "Y-m-d", // ส่งข้อมูลแบบ ค.ศ. ไปยังเซิร์ฟเวอร์
         altInput: true,
         altInputClass: "w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none bg-white",
         altFormat: "d/m/Y", // แสดงผล
