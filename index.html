@@ -9,6 +9,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- ไฟล์แปลภาษาไทยสำหรับ Flatpickr -->
+<script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -185,7 +191,8 @@
           <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-end">
             <div id="filter-daily" class="w-full md:w-auto">
               <label class="block text-sm text-gray-600 mb-1">เลือกวันที่</label>
-              <input type="date" id="report-date" class="w-full px-4 py-2 border rounded-xl">
+              
+              <input type="text" id="report-date" required class="w-full px-4 py-2 border rounded-xl focus:ring-primary bg-white">
             </div>
             <div id="filter-monthly" class="w-full md:w-auto hidden">
               <label class="block text-sm text-gray-600 mb-1">เลือกเดือน</label>
@@ -269,7 +276,8 @@
                 </div>
                 <div>
                   <label class="block text-sm text-gray-700 mb-1">วันเกิด</label>
-                  <input type="date" id="pt-birthDate" required class="w-full px-4 py-2 border rounded-xl focus:ring-primary">
+                 
+                  <input type="text" id="pt-birthDate" required class="w-full px-4 py-2 border rounded-xl focus:ring-primary bg-white">
                 </div>
                 <div>
                   <label class="block text-sm text-gray-700 mb-1">เพศ</label>
@@ -367,7 +375,8 @@
               <div class="p-5 border-t border-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div><label class="block text-gray-600 mb-1">ครั้งที่เยี่ยม (Auto)</label><input type="text" id="vf-visit-no-display" readonly class="w-full px-4 py-2 bg-gray-100 border rounded-xl">
                 </div>
-                <div><label class="block text-gray-600 mb-1">วันที่เยี่ยม (ดด/วว/ปปปป)</label><input type="date" id="vf-date" required class="w-full px-4 py-2 border rounded-xl focus:ring-primary">
+                <div><label class="block text-gray-600 mb-1">วันที่เยี่ยม (ดด/วว/ปปปป)</label>
+                <input type="text" id="vf-date" required class="w-full px-4 py-2 border rounded-xl focus:ring-primary bg-white">
                 </div>
                 <div class="flex gap-2">
                   <div class="w-1/2"><label class="block text-gray-600 mb-1">เวลาเริ่ม</label><input type="time" id="vf-start-time" required class="w-full px-4 py-2 border rounded-xl">
