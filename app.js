@@ -9,7 +9,7 @@
 // 1. CONFIGURATION & STATE
 // ----------------------------------------------------------------------------
 // ** สำคัญมาก: ใส่ Web App URL ของคุณที่นี่ (ต้องลงท้ายด้วย /exec) **
-const API_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbwegFGFsmoOYVjXIcAim-Z6A6SL7NH3N0dO4jmsQVQzIY8a4J-FdQGncRCMhD9MUSplNg/exec"; 
 
 let currentUser = null;
 let globalCareGivers = [];
