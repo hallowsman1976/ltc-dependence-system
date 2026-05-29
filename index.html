@@ -107,6 +107,14 @@
     .phone-bg { padding: 0 16px; }
   }
 
+  /* Width-only constraint for fixed bottom bars — matches .phone width
+     without inheriting min-height/background/shadow that would cover content */
+  .phone-w {
+    width: min(440px, 100vw);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   /* Thai number-friendly tabular figures */
   .tnum { font-variant-numeric: tabular-nums; }
 
@@ -181,23 +189,9 @@
 <body>
   <div id="root"></div>
 
-  <!-- Data + helpers -->
-  <script type="text/babel" data-presets="env,react" src="data.jsx"></script>
-  <!-- Shared UI atoms -->
-  <script type="text/babel" data-presets="env,react" src="shared.jsx"></script>
-  <!-- Login & Home screens -->
-  <script type="text/babel" data-presets="env,react" src="screens.jsx"></script>
-  <!-- Admin Dashboard -->
-  <script type="text/babel" data-presets="env,react" src="dashboard.jsx"></script>
-  <!-- Admin: User Mgmt + Patient Registry -->
-  <script type="text/babel" data-presets="env,react" src="admin-mgmt.jsx"></script>
-  <!-- Case Manager screens -->
-  <script type="text/babel" data-presets="env,react" src="case-manager.jsx"></script>
-  <!-- Visit form sections -->
-  <script type="text/babel" data-presets="env,react" src="form-sections.jsx"></script>
-  <!-- Visit form wizard -->
-  <script type="text/babel" data-presets="env,react" src="form.jsx"></script>
-  <!-- Root app -->
-  <script type="text/babel" data-presets="env,react" src="app.jsx"></script>
+  <!-- Bundled: data + shared + screens + dashboard + admin-mgmt
+       + case-manager + form-sections + form + app
+       (originals preserved in design-extract/ltc-dependence-system/project/) -->
+  <script type="text/babel" data-presets="env,react" src="bundle.jsx"></script>
 </body>
 </html>
