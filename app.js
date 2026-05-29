@@ -322,20 +322,36 @@ function deleteCareGiver(code) {
 }
 
 // ฟังก์ชันคำนวณอายุแบบ Real-time เพื่อป้องกันข้อมูลหลังบ้านหาย
+// ฟังก์ชันคำนวณอายุที่สามารถดักจับและแก้ปัญหาปี พ.ศ. ได้อัตโนมัติ
 function calculatePatientAge(birthDateString) {
-    if (!birthDateString) return 0;
-    const bd = new Date(birthDateString);
-    if (isNaN(bd.getTime())) return 0;
+    if (!birthDateString || birthDateString === "-") return 0;
     
+    // ดึงเฉพาะวันที่ YYYY-MM-DD
+    const datePart = birthDateString.split('T')[0];
+    const parts = datePart.split('-');
+    if (parts.length !== 3) return 0;
+
+    let bYear = parseInt(parts[0]);
+    const bMonth = parseInt(parts[1]) - 1; // เดือนใน JS เริ่มที่ 0
+    const bDay = parseInt(parts[2]);
+
+    // ฮีโร่ของเรา: ถ้าเลขปีเกิน 2400 แปลว่าหลุดเป็น พ.ศ. มา ให้ลบ 543 กลับเป็น ค.ศ.
+    if (bYear > 2400) {
+        bYear -= 543;
+    }
+
+    const bd = new Date(bYear, bMonth, bDay);
     const today = new Date();
+    
     let age = today.getFullYear() - bd.getFullYear();
     const m = today.getMonth() - bd.getMonth();
     
-    // ถ้ายังไม่ถึงเดือนเกิด หรือเดือนเดียวกันแต่ยังไม่ถึงวันเกิด ให้ลบอายุออก 1 ปี
+    // ถ้ายังไม่ถึงเดือนเกิด หรือเดือนเดียวกันแต่ยังไม่ถึงวันเกิด ให้หักอายุออก 1 ปี
     if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) {
         age--;
     }
-    return age > 0 ? age : 0;
+    
+    return age >= 0 ? age : 0;
 }
 
 // --- Patient CRUD ---
@@ -355,26 +371,28 @@ async function renderPatientPage(forceFetch = false) {
         filteredData,
         ['HN', 'ชื่อ-สกุล (อายุ)', 'ผู้ดูแลรับผิดชอบ', 'จัดการ'],
         (pt) => {
-            // ดักจับและคำนวณอายุให้ชัวร์
-            const safeAge = (pt.age !== undefined && pt.age !== null && !isNaN(pt.age)) ? pt.age : calculatePatientAge(pt.birthDate);
-            return [
-                `<div class="text-sm font-medium text-gray-900">${pt.patientId}</div>`,
-                `<div class="flex items-center gap-3"><img src="${pt.imageUrl}" class="w-10 h-10 rounded-full object-cover shadow-sm"><div><div class="text-sm font-medium text-gray-900">${pt.fullName}</div><div class="text-xs text-gray-500">อายุ ${safeAge} ปี</div></div></div>`,
-                `<div class="text-sm text-gray-500">${pt.caregiverName !== '-' ? pt.caregiverName : '<span class="text-red-500 font-medium">ยังไม่ระบุ</span>'}</div>`
-            ];
-        },
-        // วางทับในส่วน (pt) => [ ... ] ของฟังก์ชัน renderPatientPage
-        (pt) => {
-            const safeAge = (pt.age !== undefined && pt.age !== null && !isNaN(pt.age)) ? pt.age : calculatePatientAge(pt.birthDate);
+            // บังคับใช้ตัวคำนวณหน้าบ้านเสมอ เพื่อแก้ปัญหา พ.ศ. / ค.ศ.
+            const safeAge = calculatePatientAge(pt.birthDate);
             return [
                 `<div class="text-sm font-medium text-gray-900">${pt.patientId}</div>`,
                 `<div class="flex items-center gap-3">
                     <img src="${pt.imageUrl}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/168/168726.png'" class="w-10 h-10 rounded-full object-cover shadow-sm bg-white">
-                    <div><div class="text-sm font-medium text-gray-900">${pt.fullName}</div><div class="text-xs text-gray-500">อายุ ${safeAge} ปี</div></div>
+                    <div><div class="text-sm font-medium text-gray-900">${pt.fullName}</div><div class="text-xs text-gray-500 text-primary font-medium">อายุ ${safeAge} ปี</div></div>
                 </div>`,
                 `<div class="text-sm text-gray-500">${pt.caregiverName !== '-' ? pt.caregiverName : '<span class="text-red-500 font-medium">ยังไม่ระบุ</span>'}</div>`
             ];
-        }
+        },
+        (pt) => {
+            const safeAge = calculatePatientAge(pt.birthDate);
+            return `<div class="flex items-center gap-4 mb-3">
+                <img src="${pt.imageUrl}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/168/168726.png'" class="w-14 h-14 rounded-full object-cover shadow bg-white">
+                <div><div class="font-bold text-lg text-primary">${pt.fullName}</div><div class="text-sm text-gray-600">HN: ${pt.patientId} | <span class="text-primary font-medium">อายุ ${safeAge} ปี</span></div></div>
+            </div>
+            <div class="text-sm text-gray-500 mb-2 bg-gray-50 p-2 rounded"><i class="fa-user-nurse fa-solid mr-1"></i> ผู้ดูแล: ${pt.caregiverName}</div>`;
+        },
+        (pt) => `<div class="flex flex-wrap gap-2"><button onclick="renderPatientHistory('${pt.patientId}', '${pt.fullName}')" title="ดูประวัติ" class="text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-100 transition"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติ</button> <button onclick="openAssignModal('${pt.patientId}', '${pt.fullName}')" title="มอบหมายผู้ดูแล" class="text-orange-500 bg-orange-50 px-3 py-1.5 rounded-lg text-sm hover:bg-orange-100 transition"><i class="fa-solid fa-hand-holding-medical"></i> มอบหมาย</button> <button onclick="openPatientModal('${pt.patientId}')" class="text-blue-500 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition"><i class="fa-solid fa-pen"></i></button> <button onclick="deletePatient('${pt.patientId}')" class="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition"><i class="fa-solid fa-trash"></i></button></div>`
+    );
+}
 
 function openPatientModal(id = null) {
     document.getElementById('form-patient').reset();
